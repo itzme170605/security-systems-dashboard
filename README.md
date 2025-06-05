@@ -5,12 +5,12 @@ A simulation dashboard for a multi-site security system using Flask, React, and 
 
 ---
 
-### 📌 Overview
+###  Overview
 The **Cyber Threat Intelligence Dashboard** is a lightweight Flask-based web application designed to ingest open-source cyber threat feeds, extract Indicators of Compromise (IOCs), and present them in a human-readable format. This tool is intended for cybersecurity analysts, researchers, and blue teams to improve threat visibility and awareness.
 
 ---
 
-### 🎯 Objectives
+### Objectives
 - Automate the parsing of publicly available threat data
 - Extract and display relevant IOCs (IPs, hashes, URLs)
 - Provide an interactive dashboard for analysis
@@ -19,7 +19,7 @@ The **Cyber Threat Intelligence Dashboard** is a lightweight Flask-based web app
 
 ---
 
-### 🧱 Architecture
+### Architecture
 
 **Tech Stack**
 - **Backend**: Flask (Python)
@@ -39,7 +39,7 @@ The **Cyber Threat Intelligence Dashboard** is a lightweight Flask-based web app
 
 ---
 
-### 🔍 Core Components
+### Core Components
 
 | Component        | Description                                                                 |
 |------------------|-----------------------------------------------------------------------------|
@@ -50,14 +50,14 @@ The **Cyber Threat Intelligence Dashboard** is a lightweight Flask-based web app
 
 ---
 
-### ✅ Features (Phase 1 – Complete)
+###  Features (Phase 1 – Complete)
 - Mock IOC feed ingestion
 - IOC extraction: IP, URL, MD5, SHA256
 - Dynamic dashboard rendering via Jinja2 template
 
 ---
 
-### 🛠️ Upcoming (Phase 2)
+### Upcoming (Phase 2)
 - Replace mock data with **live feeds** (e.g., OTX pulse API)
 - Add MITRE ATT&CK mapping logic
 - Enable **export to CSV/PDF**
@@ -66,14 +66,14 @@ The **Cyber Threat Intelligence Dashboard** is a lightweight Flask-based web app
 
 ---
 
-### 🔒 Security Considerations
+### Security Considerations
 - Input/output sanitization
 - Logging for suspicious payloads (future)
 - API rate limiting and key handling (for real feeds)
 
 ---
 
-### 📌 Roadmap
+### Roadmap
 | Version | Features                                                                 |
 |---------|--------------------------------------------------------------------------|
 | 0.1     | IOC parsing from mocked feed, display in dashboard                       |
