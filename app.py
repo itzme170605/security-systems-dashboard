@@ -15,17 +15,49 @@ Core Features (Phase 1):
 from flask import Flask, render_template, request, jsonify
 import requests
 import re
+from dotenv import load_dotenv
+import os
 
 app = Flask(__name__)
 
-# --- Mocked Data Fetch ---
+# # --- Mocked Data Fetch ---
+# def fetch_otx_feed():
+#     # Replace this URL with an actual API call or threat feed source
+#     return [
+#         {"id": 1, "content": "Malware detected at 45.77.33.89 with MD5 hash a5f3c6a11b03839d46af9fb43c97c188"},
+#         {"id": 2, "content": "Phishing URL http://malicious.com/login found spreading via email"},
+#         {"id": 3, "content": "Suspicious SHA256 hash: 44d88612fea8a8f36de82e1278abb02f"}
+#     ]
+
+
+
+load_dotenv()
+OTX_API_KEY = os.getenv("OTX_API_KEY")
+
 def fetch_otx_feed():
-    # Replace this URL with an actual API call or threat feed source
-    return [
-        {"id": 1, "content": "Malware detected at 45.77.33.89 with MD5 hash a5f3c6a11b03839d46af9fb43c97c188"},
-        {"id": 2, "content": "Phishing URL http://malicious.com/login found spreading via email"},
-        {"id": 3, "content": "Suspicious SHA256 hash: 44d88612fea8a8f36de82e1278abb02f"}
-    ]
+    url = "https://otx.alienvault.com/api/v1/pulses/subscribed"
+    headers = {
+        "X-OTX-API-KEY": OTX_API_KEY
+    }
+
+    try:
+        response = requests.get(url, headers=headers)
+        if response.status_code == 200:
+            data = response.json()
+            feed = []
+            for pulse in data.get("results", []):
+                feed.append({
+                    "id": pulse["id"],
+                    "content": pulse.get("description", "") + " " + " ".join([i.get("indicator", "") for i in pulse.get("indicators", [])])
+                })
+            return feed
+        else:
+            print(f"[ERROR] OTX API Error: {response.status_code}")
+            return []
+    except Exception as e:
+        print(f"[ERROR] Exception fetching OTX data: {e}")
+        return []
+
 
 # --- IOC Extraction ---
 def extract_iocs(feed):
