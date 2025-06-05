@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Threat Intelligence Dashboard</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        h1 { color: #333; }
+        table { border-collapse: collapse; width: 100%; }
+        th, td { border: 1px solid #ccc; padding: 8px; text-align: left; }
+        th { background-color: #f4f4f4; }
+        tr:nth-child(even) { background-color: #f9f9f9; }
+    </style>
+</head>
+<body>
+    <h1>Cyber Threat Intelligence Dashboard</h1>
+
+    <table>
+        <tr>
+            <th>Entry ID</th>
+            <th>IP Address(es)</th>
+            <th>URL(s)</th>
+            <th>MD5 Hash(es)</th>
+            <th>SHA256 Hash(es)</th>
+        </tr>
+        {% for ioc in iocs %}
+        <tr>
+            <td>{{ ioc.id }}</td>
+            <td>{{ ioc.ip | join(', ') }}</td>
+            <td>{{ ioc.url | join(', ') }}</td>
+            <td>{{ ioc.md5 | join(', ') }}</td>
+            <td>{{ ioc.sha256 | join(', ') }}</td>
+        </tr>
+        {% endfor %}
+    </table>
+</body>
+</html>
