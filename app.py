@@ -82,6 +82,11 @@ def extract_iocs(feed):
 def index():
     raw_feed = fetch_otx_feed()
     parsed_iocs = extract_iocs(raw_feed)
+
+    # DEBUG: Print to console
+    print("Raw feed sample:", raw_feed[:2])
+    print("Parsed IOCs sample:", parsed_iocs[:2])
+
     return render_template('dashboard.html', iocs=parsed_iocs)
 
 if __name__ == '__main__':
