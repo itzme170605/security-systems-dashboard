@@ -1,0 +1,10 @@
+services:
+  - type: web
+    name: threat-intel-dashboard
+    env: python
+    plan: free
+    buildCommand: "pip install -r requirements.txt"
+    startCommand: "python app.py"
+    envVars:
+      - key: OTX_API_KEY
+        value: YOUR_KEY_HERE
