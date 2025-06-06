@@ -19,6 +19,9 @@ from dotenv import load_dotenv
 import os
 from taxii2client.v20 import Server
 from stix2 import MemoryStore
+import json
+
+CACHE_FILE = "data/mitre_techniques.json"
 
 app = Flask(__name__)
 
@@ -80,30 +83,79 @@ def extract_iocs(feed):
         })
     return iocs
 
+
+
 def get_mitre_attack_techniques():
-    # Connect to MITRE ATT&CK TAXII Server
     server = Server('https://cti-taxii.mitre.org/taxii/')
-    api_root = server.api_roots[0]  # Default root
-    collection = api_root.collections[0]  # Enterprise ATT&CK
+    api_root = server.api_roots[0]
+    collection = api_root.collections[0]
 
-    # Get STIX data
-    stix_data = collection.get_objects()
-    mem_store = MemoryStore(stix_data=stix_data['objects'])
+    try:
+        # Add timeout parameter here
+        stix_data = collection.get_objects(timeout=10)
+        mem_store = MemoryStore(stix_data=stix_data['objects'])
 
-    # Filter only techniques
-    techniques = mem_store.query([
-        {"type": "attack-pattern"}
-    ])
+        techniques = mem_store.query([
+            {"type": "attack-pattern"}
+        ])
 
-    technique_map = {}
-    for tech in techniques:
-        technique_map[tech['id']] = {
-            "name": tech['name'],
-            "description": tech.get('description', ''),
-            "external_id": next((e['external_id'] for e in tech['external_references'] if 'external_id' in e), '')
-        }
-    return technique_map
+        technique_map = {}
+        for tech in techniques:
+            technique_map[tech['id']] = {
+                "name": tech['name'],
+                "description": tech.get('description', ''),
+                "external_id": next((e['external_id'] for e in tech['external_references'] if 'external_id' in e), '')
+            }
+        return technique_map
 
+    except requests.exceptions.Timeout:
+        print("[ERROR] Timeout while fetching MITRE ATT&CK data.")
+        return {}
+
+    except Exception as e:
+        print(f"[ERROR] Exception in MITRE fetch: {e}")
+        return {}
+    
+def get_cached_mitre_attack_techniques():
+    if os.path.exists(CACHE_FILE):
+        with open(CACHE_FILE, "r") as f:
+            print("[INFO] MITRE techniques loaded from cache.")
+            return json.load(f)
+
+    print("[INFO] Fetching techniques from MITRE TAXII server...")
+    try:
+        server = Server('https://cti-taxii.mitre.org/taxii/')
+        api_root = server.api_roots[0]
+        collection = api_root.collections[0]
+
+        stix_data = collection.get_objects(timeout=10)
+        mem_store = MemoryStore(stix_data=stix_data["objects"])
+
+        techniques = mem_store.query([
+            {"type": "attack-pattern"}
+        ])
+
+        technique_map = {}
+        for tech in techniques:
+            external_id = next(
+                (e['external_id'] for e in tech['external_references'] if 'external_id' in e),
+                None
+            )
+            if external_id:
+                technique_map[external_id] = {
+                    "name": tech['name'],
+                    "description": tech.get("description", "")
+                }
+
+        # Save locally for future use
+        with open(CACHE_FILE, "w") as f:
+            json.dump(technique_map, f, indent=2)
+
+        return technique_map
+
+    except Exception as e:
+        print(f"[ERROR] MITRE TAXII fetch failed: {e}")
+        return {}
 '''
 Search IOC descriptions for technique names or IDs
 
@@ -113,40 +165,35 @@ Future: match specific tools to techniques
 '''
 
 def map_ioc_to_techniques(ioc_entry, technique_map):
-    """
-    Map IOC text to MITRE techniques using keyword heuristics.
-    """
     keyword_mapping = {
         "powershell": "T1059.001",
         "base64": "T1027",
         "pastebin": "T1105",
         "github": "T1105",
         "cmd.exe": "T1059.003",
-        "script": "T1059",
-        "vbs": "T1064",
-        ".lnk": "T1204.002",
         "macro": "T1203"
     }
 
-    content = ' '.join(ioc_entry.get(k, []) for k in ["ip", "url", "md5", "sha256"])
-    content = content.lower()
+    content = ' '.join(ioc_entry.get(k, []) for k in ["ip", "url", "md5", "sha256"]).lower()
     
     matched = set()
     for keyword, tid in keyword_mapping.items():
         if keyword in content and tid in technique_map:
-            matched.add(technique_map[tid]["external_id"] + ": " + technique_map[tid]["name"])
-    
+            match = f"{tid}: {technique_map[tid]['name']}"
+            matched.add(match)
+
     return list(matched)
+
 
 
 @app.route('/')
 def index():
     raw_feed = fetch_otx_feed()
     parsed_iocs = extract_iocs(raw_feed)
-    technique_map = get_mitre_attack_techniques()
+    technique_map = get_cached_mitre_attack_techniques()
 
     for ioc in parsed_iocs:
-        ioc['techniques'] = map_ioc_to_techniques(ioc, technique_map)
+        ioc["techniques"] = map_ioc_to_techniques(ioc, technique_map)
 
     return render_template('dashboard.html', iocs=parsed_iocs)
 
