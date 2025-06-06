@@ -17,6 +17,8 @@ import requests
 import re
 from dotenv import load_dotenv
 import os
+from taxii2client.v20 import Server
+from stix2 import MemoryStore
 
 app = Flask(__name__)
 
@@ -78,16 +80,76 @@ def extract_iocs(feed):
         })
     return iocs
 
+def get_mitre_attack_techniques():
+    # Connect to MITRE ATT&CK TAXII Server
+    server = Server('https://cti-taxii.mitre.org/taxii/')
+    api_root = server.api_roots[0]  # Default root
+    collection = api_root.collections[0]  # Enterprise ATT&CK
+
+    # Get STIX data
+    stix_data = collection.get_objects()
+    mem_store = MemoryStore(stix_data=stix_data['objects'])
+
+    # Filter only techniques
+    techniques = mem_store.query([
+        {"type": "attack-pattern"}
+    ])
+
+    technique_map = {}
+    for tech in techniques:
+        technique_map[tech['id']] = {
+            "name": tech['name'],
+            "description": tech.get('description', ''),
+            "external_id": next((e['external_id'] for e in tech['external_references'] if 'external_id' in e), '')
+        }
+    return technique_map
+
+'''
+Search IOC descriptions for technique names or IDs
+
+Add a new field in the dashboard to show technique mappings
+
+Future: match specific tools to techniques
+'''
+
+def map_ioc_to_techniques(ioc_entry, technique_map):
+    """
+    Map IOC text to MITRE techniques using keyword heuristics.
+    """
+    keyword_mapping = {
+        "powershell": "T1059.001",
+        "base64": "T1027",
+        "pastebin": "T1105",
+        "github": "T1105",
+        "cmd.exe": "T1059.003",
+        "script": "T1059",
+        "vbs": "T1064",
+        ".lnk": "T1204.002",
+        "macro": "T1203"
+    }
+
+    content = ' '.join(ioc_entry.get(k, []) for k in ["ip", "url", "md5", "sha256"])
+    content = content.lower()
+    
+    matched = set()
+    for keyword, tid in keyword_mapping.items():
+        if keyword in content and tid in technique_map:
+            matched.add(technique_map[tid]["external_id"] + ": " + technique_map[tid]["name"])
+    
+    return list(matched)
+
+
 @app.route('/')
 def index():
     raw_feed = fetch_otx_feed()
     parsed_iocs = extract_iocs(raw_feed)
+    technique_map = get_mitre_attack_techniques()
 
-    # DEBUG: Print to console
-    print("Raw feed sample:", raw_feed[:2])
-    print("Parsed IOCs sample:", parsed_iocs[:2])
+    for ioc in parsed_iocs:
+        ioc['techniques'] = map_ioc_to_techniques(ioc, technique_map)
 
     return render_template('dashboard.html', iocs=parsed_iocs)
+
 
 if __name__ == '__main__':
     app.run(debug=True)

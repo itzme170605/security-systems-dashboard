@@ -21,6 +21,7 @@
             <th>URL(s)</th>
             <th>MD5 Hash(es)</th>
             <th>SHA256 Hash(es)</th>
+            <th>MITRE Techniques</th>
         </tr>
         {% for ioc in iocs %}
         <tr>
@@ -29,6 +30,7 @@
             <td>{{ ioc.url | join(', ') }}</td>
             <td>{{ ioc.md5 | join(', ') }}</td>
             <td>{{ ioc.sha256 | join(', ') }}</td>
+            <td>{{ ioc.techniques | join(', ') }}</td>
         </tr>
         {% endfor %}
     </table>

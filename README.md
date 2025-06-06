@@ -80,3 +80,12 @@ The **Cyber Threat Intelligence Dashboard** is a lightweight Flask-based web app
 | 0.2     | Live feed integration, MITRE mapping                                     |
 | 0.3     | Authentication, export features, dark mode UI toggle                     |
 | 1.0     | Fully deployable platform with alerting and CI/CD                        |
+
+### Just some notes 
+PowerShell-based obfuscation → T1059.001
+
+Base64 + script execution → T1027
+
+Domains like pastebin.com, github.com/raw/ → common in data exfiltration or staging
+
+We’ll append a new column: Mapped Technique(s)
