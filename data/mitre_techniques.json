@@ -1,0 +1,22 @@
+{
+  "T1059.001": {
+    "name": "PowerShell",
+    "description": "PowerShell is a powerful scripting language and shell framework used by both administrators and adversaries. Adversaries may abuse PowerShell commands and scripts for execution of code and to perform other tasks."
+  },
+  "T1027": {
+    "name": "Obfuscated Files or Information",
+    "description": "Adversaries may use obfuscation techniques to hide the true intent of their code, scripts, or executable files in order to avoid detection or analysis."
+  },
+  "T1105": {
+    "name": "Ingress Tool Transfer",
+    "description": "Adversaries may transfer tools or other files from an external system into a compromised environment to facilitate their objectives."
+  },
+  "T1059.003": {
+    "name": "Windows Command Shell",
+    "description": "The Windows Command Shell (cmd.exe) is a native command-line interpreter for Windows, commonly used by adversaries to execute commands and scripts."
+  },
+  "T1203": {
+    "name": "Exploitation for Client Execution",
+    "description": "Adversaries may exploit software vulnerabilities in client applications to execute arbitrary code or commands on a system."
+  }
+}

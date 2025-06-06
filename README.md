@@ -89,3 +89,10 @@ Base64 + script execution → T1027
 Domains like pastebin.com, github.com/raw/ → common in data exfiltration or staging
 
 We’ll append a new column: Mapped Technique(s)
+
+---------------
+
+### Som things that keep crashing 
+
+-  MITRE’s TAXII server is currently timing out (probably due to network restrictions or server throttling).
+- No mitre_techniques.json file was cached, so the app crashes when trying to render technique

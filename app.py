@@ -12,7 +12,7 @@ Core Features (Phase 1):
 - Basic MITRE technique mapping (mocked for now)
 """
 
-from flask import Flask, render_template, request, jsonify
+from flask import Flask, render_template, request, jsonify, Response 
 import requests
 import re
 from dotenv import load_dotenv
@@ -20,6 +20,8 @@ import os
 from taxii2client.v20 import Server
 from stix2 import MemoryStore
 import json
+# from flask import Response
+import pandas as pd
 
 CACHE_FILE = "data/mitre_techniques.json"
 
@@ -92,7 +94,7 @@ def get_mitre_attack_techniques():
 
     try:
         # Add timeout parameter here
-        stix_data = collection.get_objects(timeout=10)
+        stix_data = collection.get_objects(timeout=5)
         mem_store = MemoryStore(stix_data=stix_data['objects'])
 
         techniques = mem_store.query([
@@ -128,7 +130,7 @@ def get_cached_mitre_attack_techniques():
         api_root = server.api_roots[0]
         collection = api_root.collections[0]
 
-        stix_data = collection.get_objects(timeout=10)
+        stix_data = collection.get_objects(timeout=5)
         mem_store = MemoryStore(stix_data=stix_data["objects"])
 
         techniques = mem_store.query([
@@ -156,6 +158,8 @@ def get_cached_mitre_attack_techniques():
     except Exception as e:
         print(f"[ERROR] MITRE TAXII fetch failed: {e}")
         return {}
+    
+
 '''
 Search IOC descriptions for technique names or IDs
 
@@ -171,10 +175,15 @@ def map_ioc_to_techniques(ioc_entry, technique_map):
         "pastebin": "T1105",
         "github": "T1105",
         "cmd.exe": "T1059.003",
-        "macro": "T1203"
+        "macro": "T1203",
+        "vbs": "T1064",
+        "mshta": "T1218.005",
+        "rundll32": "T1218.011",
+        "regsvr32": "T1218.010"
     }
 
-    content = ' '.join(ioc_entry.get(k, []) for k in ["ip", "url", "md5", "sha256"]).lower()
+    content = ' '.join(sum((ioc_entry.get(k, []) for k in ["ip", "url", "md5", "sha256"]), [])).lower()
+
     
     matched = set()
     for keyword, tid in keyword_mapping.items():
@@ -192,11 +201,51 @@ def index():
     parsed_iocs = extract_iocs(raw_feed)
     technique_map = get_cached_mitre_attack_techniques()
 
+    # 🛠️ Add this block here
+    technique_descriptions = {
+        tid: data["description"]
+        for tid, data in technique_map.items()
+    }
+
     for ioc in parsed_iocs:
         ioc["techniques"] = map_ioc_to_techniques(ioc, technique_map)
 
-    return render_template('dashboard.html', iocs=parsed_iocs)
+    # ✅ Pass technique_descriptions to template
+    return render_template(
+        'dashboard.html',
+        iocs=parsed_iocs,
+        technique_descriptions=technique_descriptions
+    )
 
+
+@app.route('/export.csv')
+def export_csv():
+    raw_feed = fetch_otx_feed()
+    parsed_iocs = extract_iocs(raw_feed)
+    technique_map = get_cached_mitre_attack_techniques()
+
+    for ioc in parsed_iocs:
+        ioc["techniques"] = map_ioc_to_techniques(ioc, technique_map)
+
+    data = []
+    for ioc in parsed_iocs:
+        data.append({
+            "ID": ioc["id"],
+            "IPs": ', '.join(ioc["ip"]),
+            "URLs": ', '.join(ioc["url"]),
+            "MD5 Hashes": ', '.join(ioc["md5"]),
+            "SHA256 Hashes": ', '.join(ioc["sha256"]),
+            "MITRE Techniques": ', '.join(ioc["techniques"])
+        })
+
+    df = pd.DataFrame(data)
+    csv_data = df.to_csv(index=False)
+
+    return Response(
+        csv_data,
+        mimetype="text/csv",
+        headers={"Content-disposition": "attachment; filename=iocs_export.csv"}
+    )
 
 if __name__ == '__main__':
     app.run(debug=True)

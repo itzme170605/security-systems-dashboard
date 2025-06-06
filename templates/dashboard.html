@@ -30,9 +30,20 @@
             <td>{{ ioc.url | join(', ') }}</td>
             <td>{{ ioc.md5 | join(', ') }}</td>
             <td>{{ ioc.sha256 | join(', ') }}</td>
-            <td>{{ ioc.techniques | join(', ') }}</td>
+            <td>
+                {% for t in ioc.techniques %}
+                    <span title="{{ technique_descriptions.get(t.split(':')[0], 'No description available') }}">{{ t }}</span>{% if not loop.last %}, {% endif %}
+                {% endfor %}
+            </td>
+
         </tr>
         {% endfor %}
     </table>
+
+    <p>
+        <a href="/export.csv" download>
+            <button>⬇️ Export as CSV</button>
+        </a>
+    </p>
 </body>
 </html>
